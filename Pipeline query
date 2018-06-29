@@ -1,0 +1,40 @@
+Insert into table ogoud.pipeline12 partition (updated_date) 
+
+select ims.week ims_week, ims.gtin ims_gtin, ims.vendorid ims_vendorID, ims.channeltype,
+ims.ubergm, ims.subcategory, ing.gtin ing_gtin,ing.vendor_id ing_vendorID, ing.first_ingested_on, ing.setup_completed_on, ing.last_state, ing.last_status,
+ct.gtin siti_gtin, ct.information_provider_id siti_vendorid, ct.product_id, ct.chnltype, ct.config, ct.isPrimaryVendorInd, ub.itemid, ub.offer_type, ub.pub_sts,
+ub.lifecycle_sts, ub.can_ATC, si.is_orderable, si.item_id, si.reason_code, ub.unpub_reasons, updated_date from
+
+(select i.week , i.gtin , i.vendorid , i.channeltype, i.ubergm, i.subcategory from ogoud.ims i where not exists
+
+(select 1 from ogoud.ims_setup_complete se where i.gtin=se.gtin and i.vendorid=se.vendorid)) ims 
+left join
+
+(select s.gtin, s.vendor_id, s.first_ingested_on, s.setup_completed_on, s.last_state, s.last_status from msaxen1.SUPPLIER_ITEM_SETUP_DATA s
+inner join 
+
+(select gtin, vendor_id, max(last_modified_on) date from msaxen1.SUPPLIER_ITEM_SETUP_DATA
+group by gtin, vendor_id) dt on s.gtin=dt.gtin and s.vendor_id=dt.vendor_id and s.last_modified_on=dt.date) ing on ims.gtin=ing.gtin and ims.vendorID=ing.vendor_id
+left join
+
+(select gtin, product_id, information_provider_id, chnltype, max(online) config, max(primary) isPrimaryVendorInd from
+
+		(select  gtin, product_id, information_provider_id,
+		case when get_json_object(payload_json,'$.attributes.itemTypeCode')=7 then 'DSV' else 'OWNED' end Chnltype,
+		case when get_json_object(payload_json,'$.attributes.buyingRegionCode')=6 then 1 else 0  end ONLINE,
+		case when get_json_object(payload_json,'$.attributes.buyingRegionCode')<>6 then 1 else 0 end NOT_ONLINE,
+		case when get_json_object(payload_json,'$.attributes.isPrimaryVendorInd')='true' then 1 else 0 end primary,
+		case when get_json_object(payload_json,'$.attributes.isPrimaryVendorInd')='false' then 1 else 0 end notprimary
+		from catint.supply_trade_item_data_daily where identifier_type='SUPPLY_ITEM' and date_id=${hiveconf:yday} and information_provider_code='SUPPLIER_NUMBER') si
+group by gtin, product_id, information_provider_id,chnltype) ct on ims.gtin=ct.gtin and ims.vendorID=ct.information_provider_id
+left join
+
+(select  distinct product_id, itemid, get_json_object(product_offer_panama_json,'$.offer.offerType')offer_type,
+get_json_object(product_offer_panama_json,'$.offer.offerPublishStatus') Pub_sts,
+get_json_object(product_offer_panama_json,'$.offer.offerLifecycleStatus') lifecycle_sts,
+get_json_object(product_offer_panama_json,'$.storeFronts.canAddToCart') can_ATC,
+get_json_object(product_offer_json,'$.statusChangeReasons') unpub_reasons from
+catint.uber_flat_product_daily where date_id=${hiveconf:yday} and product_identifier_type='DOTCOM_OFFER') ub on ct.product_id=ub.product_id
+left join
+
+(select distinct item_id, is_orderable, reason_code from smart_repl_prod.uber_data_with_orderable_status) si on ub.itemid=si.item_id

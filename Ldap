@@ -1,0 +1,21 @@
+logmech ldap;
+sessions 1;
+LOGON WM1.wal-mart.com/ogoud,Apr1234;
+DROP TABLE GE017_WM_AD_HOC.omkar_UT;
+DROP table GE017_WM_AD_HOC.omkar_ET;
+DELETE FROM GE017_WM_AD_HOC.Ubergm;
+SET RECORD VARTEXT ' ';
+define
+CATLG_ITEM_ID (VARCHAR(100)),
+UberGM (VARCHAR(100))
+
+
+FILE = millist.txt;
+BEGIN LOADING GE017_WM_AD_HOC.Ubergm ERRORFILES GE017_WM_AD_HOC.omkar_UT, GE017_WM_AD_HOC.omkar_ET;
+INSERT INTO GE017_WM_AD_HOC.Ubergm (
+:CATLG_ITEM_ID,
+:UberGM 
+
+);
+END LOADING;
+logoff;

@@ -1,0 +1,72 @@
+Query for getting the count of all 1P published offers
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20170121" 
+             and product_identifier_type = "DOTCOM_OFFER" and product_publish_status = "PUBLISHED"
+             and get_json_object(uber_row.product_offer_json,'$.offerPublishStatus') = "PUBLISHED";
+**********************************************************************************************************************
+
+
+Query for getting the count of all 3P published offers
+
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20170121" 
+           and product_identifier_type = "SELLER_OFFER" and product_publish_status = "PUBLISHED"
+           and get_json_object(uber_row.product_offer_json,'$.offerPublishStatus') = "PUBLISHED";
+**********************************************************************************************************************
+
+
+Query for getting the count of all Published SKU's
+
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20170121" 
+          and product_identifier_type = "PRIMARY_PRODUCT_OFFER" and product_publish_status = "PUBLISHED";
+**********************************************************************************************************************
+
+Query for getting the count of all publish product in stock
+
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20180308" 
+        and product_identifier_type = "PRIMARY_PRODUCT_OFFER" and product_publish_status = "PUBLISHED"
+        and get_json_object(uber_row.product_rollup_json,'$.storeFrontBuyingOptions[0].availabilityStatus') = "AVAILABLE";
+**********************************************************************************************************************
+
+Query for getting the count of all publish product out of stock
+
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20170121" 
+        and product_identifier_type = "PRIMARY_PRODUCT_OFFER" and product_publish_status = "PUBLISHED"
+        and get_json_object(uber_row.product_rollup_json,'$.storeFrontBuyingOptions[0].availabilityStatus') != "AVAILABLE";
+**********************************************************************************************************************
+
+Query for getting the count of all variants published products in stock
+
+
+select count(*) from catint.uber_flat_product_daily uber_row where date_id = "20180307" 
+         and product_identifier_type = "PRIMARY_PRODUCT_OFFER" and product_publish_status = "PUBLISHED"
+         and get_json_object(uber_row.product_rollup_json,'$.storeFrontBuyingOptions[0].availabilityStatus') = "AVAILABLE"
+         and get_json_object(uber_row.product_qarth_json, '$.meta.product_class_type')= "VARIANT";
+
+********************************************************************************************************************** 
+
+select offer_data.product_id,offer_data.offer_id, get_json_object(offer_data.product_offer_json, '$.offerPublishStatus') offerPublishStatus,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.product_category.values[0].value') product_category,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.is_searchable.values[0].value') searchable,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.item_id.values[0].value') item_id,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.upc.values[0].value') upc,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.wupc.values[0].value') wupc,
+get_json_object(product_data.product_qarth_json, '$.product_attributes.gtin.values[0].value') gtin,
+product_data.product_publish_status prodPublishStatus, 
+product_data.product_id,
+offer_data.product_id,
+product_data date_id,
+offer_data date_id,
+get_json_object(product_data.product_rollup_json, '$.primaryOffer.offerId.offerId') primary_offer 
+from catint.uber_flat_product_daily product_data join catint.uber_flat_product_daily offer_data
+on (offer_data.product_id = product_data.product_id) 
+where get_json_object(offer_data.offer_eligibility_json, '$.attributes[0].attributeName') = 'JET_ELIGIBILITY' and
+get_json_object(offer_data.offer_eligibility_json, '$.attributes[0].attributeValue') = 'ENABLED' and
+offer_data.product_identifier_type = 'DOTCOM_OFFER' and
+product_data.product_identifier_type = 'PRIMARY_PRODUCT_OFFER' and
+product_data.date_id = '20170404' and
+offer_data.date_id = '20170404';
+

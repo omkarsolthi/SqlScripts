@@ -1,0 +1,19 @@
+
+
+ euc0001.top_mm_go_get
+
+
+export MAPR_MAPREDUCE_MODE=yarn;
+hive -e "set hive.cli.print.header=true; select product_identifier_type, get_json_object(product_offer_json,'$.offerPublishStatus') Pub_sts,get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2HEligible') S2H, get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2SEligible') S2S, count(distinct product_id) as prod_cnt, count(distinct offer_id) as offer_cnt from catint.uber_flat_product_daily where date_id='20180310' and get_json_object(product_offer_json,'$.offerLifecycleStatus')='ACTIVE' and product_identifier_type<>'Primary_Product_offer' group by product_identifier_type, get_json_object(product_offer_json,'$.offerPublishStatus'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isPutEligible'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2HEligible'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2SEligible') " > Test_sts_cnt_uber2.xls;
+
+********************************************************************
+Version 1.0 count of products only for scheduling shell script 
+********************************************************************
+
+export MAPR_MAPREDUCE_MODE=yarn;
+hive -e "Insert into table ogoud.item_analytics select date_id, product_identifier_type, get_json_object(product_offer_json,'$.offerPublishStatus') Pub_sts, get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isPutEligible') PUT, get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2HEligible') S2H, get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2SEligible') S2S, count(distinct product_id) as prod_cnt from catint.uber_flat_product_daily where date_id='20180311' and get_json_object(product_offer_json,'$.offerLifecycleStatus')='ACTIVE' and product_identifier_type<>'Primary_Product_offer' group by date_id, product_identifier_type, get_json_object(product_offer_json,'$.offerPublishStatus'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isPutEligible'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2HEligible'), get_json_object(oscar_json,'$.result.offerAttributes.entry.logistics.isS2SEligible') " 
+
+****************************************************
+Create table item_analytics (Uber_date string, product_identifier_type string, pub_sts string, PUT string, S2H string, S2S string, Product_count string) PARTITIONED BY (CRE_DT date) STORED AS ORC;
+****************************************************
+
